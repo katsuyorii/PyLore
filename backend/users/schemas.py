@@ -75,5 +75,8 @@ class UserCreateSchema(BaseModel):
                 status_code=422,
                 detail="Пароль должен содержать минимум 8 символов, хотя бы одну заглавную букву, одну строчную букву, одну цифру и один специальный символ (#?!@$%^&*-)."
             )
-        print(value)
         return value
+
+class UserLoginSchema(BaseModel):
+    email: EmailStr
+    password: str
