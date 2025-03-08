@@ -5,3 +5,6 @@ __pycache__/
 
 # ENV files
 .env
+
+# Other files
+alembic.ini
