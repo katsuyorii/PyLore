@@ -1,7 +1,10 @@
-from fastapi import HTTPException
+from fastapi import HTTPException, Response
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from datetime import timedelta
+
+from src.config import settings
 from .schemas import UserRegisterSchema, UserLoginSchema, TokenResponseSchema
 from .utils import hashing_password, verify_password, create_access_token
 from users.models import UserModel
@@ -25,7 +28,7 @@ async def register_user(user_data: UserRegisterSchema, db: AsyncSession):
     await db.flush()
     await db.commit()
 
-async def authenticate_user(user: UserLoginSchema, db: AsyncSession) -> TokenResponseSchema:
+async def authenticate_user(response: Response, user: UserLoginSchema, db: AsyncSession) -> TokenResponseSchema:
     existing_user = await get_user_by_email(user.email, db)
 
     if not existing_user:
@@ -46,4 +49,15 @@ async def authenticate_user(user: UserLoginSchema, db: AsyncSession) -> TokenRes
         'role': existing_user.role,
     })
 
+    response.set_cookie(
+        key='access_token',
+        value=access_token,
+        httponly=True,
+        max_age=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
+        samesite='Strict',
+    )
+
     return TokenResponseSchema(access_token=access_token, token_type='bearer')
+
+async def logout_user(response: Response):
+    response.delete_cookie('access_token')
