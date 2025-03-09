@@ -1,3 +1,5 @@
+from fastapi import HTTPException
+
 import bcrypt
 import jwt
 
@@ -29,11 +31,20 @@ def create_access_token(payload: dict, expires_delta: timedelta | None = None) -
 
     return access_token
 
-def verify_access_token(access_token: str) -> str:
+def verify_access_token(access_token: str) -> dict:
+    print(access_token)
     try:
         payload = jwt.decode(jwt=access_token, key=settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         return payload
     except jwt.ExpiredSignatureError:
-        return None
+        raise HTTPException(
+            status_code=401,
+            detail="Токен истёк. Пожалуйста, войдите снова.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     except jwt.InvalidTokenError:
-        return None
+        raise HTTPException(
+            status_code=401,
+            detail="Недействительный токен. Проверьте правильность данных.",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
