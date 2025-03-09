@@ -16,6 +16,7 @@ REGEX_PASSWORD = re.compile(r"^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%
 
 class TokenResponseSchema(BaseModel):
     access_token: str
+    refresh_token: str
     token_type: str
 
 class UserRegisterSchema(BaseModel):

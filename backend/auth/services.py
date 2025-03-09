@@ -1,4 +1,4 @@
-from fastapi import HTTPException, Response
+from fastapi import HTTPException, Response, Request
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -6,7 +6,7 @@ from datetime import timedelta
 
 from src.config import settings
 from .schemas import UserRegisterSchema, UserLoginSchema, TokenResponseSchema
-from .utils import hashing_password, verify_password, create_access_token
+from .utils import hashing_password, verify_password, create_access_token, create_refresh_token, verify_refresh_token
 from users.models import UserModel
 from users.services import get_user_by_email
 
@@ -49,6 +49,12 @@ async def authenticate_user(response: Response, user: UserLoginSchema, db: Async
         'role': existing_user.role,
     })
 
+    refresh_token = create_refresh_token({
+        'sub': existing_user.email,
+        'username': existing_user.username,
+        'role': existing_user.role,
+    })
+
     response.set_cookie(
         key='access_token',
         value=access_token,
@@ -57,7 +63,39 @@ async def authenticate_user(response: Response, user: UserLoginSchema, db: Async
         samesite='Strict',
     )
 
-    return TokenResponseSchema(access_token=access_token, token_type='bearer')
+    response.set_cookie(
+        key='refresh_token',
+        value=refresh_token,
+        httponly=True,
+        max_age=timedelta(days=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
+        samesite='Strict',
+    )
+
+    return TokenResponseSchema(access_token=access_token, refresh_token=refresh_token, token_type='bearer')
 
 async def logout_user(response: Response):
     response.delete_cookie('access_token')
+    response.delete_cookie('refresh_token')
+
+async def refresh(request: Request, response: Response):
+    refresh_token = request.cookies.get('refresh_token')
+
+    if not refresh_token:
+        raise HTTPException(
+            status_code=401,
+            detail="Refresh token отсутствует"
+        )
+    
+    payload = verify_refresh_token(refresh_token)
+
+    new_access_token = create_access_token(payload)
+
+    response.set_cookie(
+        key='access_token',
+        value=new_access_token,
+        httponly=True,
+        max_age=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES),
+        samesite='Strict',
+    )
+
+    return TokenResponseSchema(access_token=new_access_token, refresh_token=refresh_token, token_type='bearer')

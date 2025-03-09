@@ -20,4 +20,3 @@ class UserResponseSchema(BaseORMSchema):
     is_active: bool
     created_at: datetime
     email: EmailStr
-    password: str

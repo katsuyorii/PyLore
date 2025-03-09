@@ -1,10 +1,10 @@
-from fastapi import APIRouter, Depends, Response
+from fastapi import APIRouter, Depends, Response, Request
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_session
 from .schemas import UserRegisterSchema, UserLoginSchema, TokenResponseSchema
-from .services import register_user, authenticate_user, logout_user
+from .services import register_user, authenticate_user, logout_user, refresh
 
 
 auth_router = APIRouter(
@@ -27,3 +27,7 @@ async def logout(response: Response):
     await logout_user(response)
 
     return {"message": "Вы вышли из системы"}
+
+@auth_router.post('/refresh', response_model=TokenResponseSchema)
+async def refresh_token(request: Request, response: Response):
+    return await refresh(request, response)
