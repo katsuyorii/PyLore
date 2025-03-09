@@ -1,7 +1,7 @@
-from fastapi import HTTPException
-
 import bcrypt
 import jwt
+
+from fastapi import HTTPException
 
 from datetime import datetime, timedelta, timezone
 
@@ -32,7 +32,6 @@ def create_access_token(payload: dict, expires_delta: timedelta | None = None) -
     return access_token
 
 def verify_access_token(access_token: str) -> dict:
-    print(access_token)
     try:
         payload = jwt.decode(jwt=access_token, key=settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         return payload

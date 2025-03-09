@@ -1,22 +1,15 @@
 from fastapi import HTTPException
 
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from typing import Any
-
-from users.schemas import UserCreateSchema, UserLoginSchema
-from users.models import UserModel
+from .schemas import UserRegisterSchema, UserLoginSchema, TokenResponseSchema
 from .utils import hashing_password, verify_password, create_access_token
-from .schemas import TokenResponseSchema
+from users.models import UserModel
+from users.services import get_user_by_email
 
 
-async def get_user_by_email(user_data: Any, db: AsyncSession) -> UserModel | None:
-    result = await db.execute(select(UserModel).where(UserModel.email == user_data.email))
-    return result.scalars().one_or_none()
-
-async def register_user(user_data: UserCreateSchema, db: AsyncSession):
-    existing_user = await get_user_by_email(user_data, db)
+async def register_user(user_data: UserRegisterSchema, db: AsyncSession):
+    existing_user = await get_user_by_email(user_data.email, db)
 
     if existing_user:
         raise HTTPException(
@@ -33,7 +26,7 @@ async def register_user(user_data: UserCreateSchema, db: AsyncSession):
     await db.commit()
 
 async def authenticate_user(user: UserLoginSchema, db: AsyncSession) -> TokenResponseSchema:
-    existing_user = await get_user_by_email(user, db)
+    existing_user = await get_user_by_email(user.email, db)
 
     if not existing_user:
         raise HTTPException(

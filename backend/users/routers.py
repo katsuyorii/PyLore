@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Depends
-from fastapi.security import OAuth2PasswordBearer
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database import get_session
 from .schemas import UserResponseSchema
 from .models import UserModel
-from .services import get_current_user
+from .dependencies import get_current_user
+from .services import get_user_by_email
 
 
 users_router = APIRouter(
@@ -14,10 +14,8 @@ users_router = APIRouter(
     tags=['Users'],
 )
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
-
 @users_router.get('/me', response_model=UserResponseSchema)
-async def get_me(access_token: str = Depends(oauth2_scheme), db: AsyncSession = Depends(get_session)) -> UserModel:
-    current_user = await get_current_user(access_token, db)
+async def get_me(payload: dict = Depends(get_current_user), db: AsyncSession = Depends(get_session)) -> UserModel:
+    current_user = await get_user_by_email(payload.get('sub'), db)
     
     return current_user
